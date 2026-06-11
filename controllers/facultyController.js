@@ -12,6 +12,8 @@ exports.getAllFaculty = async (req, res) => {
 
 exports.getFaculty = async (req, res) => {
   try {
+    if (!req.params.id.match(/^[a-f\d]{24}$/i))
+      return res.status(400).json({ success: false, message: 'Invalid faculty ID' });
     const faculty = await Faculty.findById(req.params.id);
     if (!faculty) return res.status(404).json({ success: false, message: 'Faculty not found' });
     res.json({ success: true, faculty });
@@ -38,6 +40,8 @@ exports.createFaculty = async (req, res) => {
 
 exports.updateFaculty = async (req, res) => {
   try {
+    if (!req.params.id.match(/^[a-f\d]{24}$/i))
+      return res.status(400).json({ success: false, message: 'Invalid faculty ID' });
     const existing = await Faculty.findById(req.params.id);
     if (!existing) return res.status(404).json({ success: false, message: 'Faculty not found' });
 
@@ -58,6 +62,8 @@ exports.updateFaculty = async (req, res) => {
 
 exports.deleteFaculty = async (req, res) => {
   try {
+    if (!req.params.id.match(/^[a-f\d]{24}$/i))
+      return res.status(400).json({ success: false, message: 'Invalid faculty ID' });
     const faculty = await Faculty.findById(req.params.id);
     if (!faculty) return res.status(404).json({ success: false, message: 'Faculty not found' });
     if (faculty.imagePublicId) await cloudinary.uploader.destroy(faculty.imagePublicId).catch(console.error);

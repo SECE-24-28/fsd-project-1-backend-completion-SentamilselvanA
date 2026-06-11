@@ -5,6 +5,7 @@ const notificationSchema = new mongoose.Schema({
   message: { type: String, required: true },
   type: { type: String, enum: ['Announcement', 'Event', 'General'], default: 'General' },
   targetRole: { type: String, enum: ['all', 'student', 'admin'], default: 'all' },
+  targetClass: { type: String, default: '' },
   readBy: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
   isActive: { type: Boolean, default: true },
 }, { timestamps: true });

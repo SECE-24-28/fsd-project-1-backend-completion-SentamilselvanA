@@ -1,4 +1,5 @@
 const Notification = require('../models/Notification');
+const Application = require('../models/Application');
 
 exports.createNotification = async (req, res) => {
   try {
@@ -11,12 +12,23 @@ exports.createNotification = async (req, res) => {
 
 exports.getNotifications = async (req, res) => {
   try {
-    const query = {
-      isActive: true,
-      $or: [{ targetRole: 'all' }, { targetRole: req.user.role }],
-    };
-    const notifications = await Notification.find(query).sort({ createdAt: -1 }).limit(20);
-    const enriched = notifications.map(n => ({
+    // Get courses the student is enrolled in (approved applications)
+    let studentCourses = [];
+    if (req.user.role === 'student') {
+      const apps = await Application.find({ user: req.user._id, status: 'Approved' }).select('selectedCourse');
+      studentCourses = apps.map(a => a.selectedCourse);
+    }
+
+    const notifications = await Notification.find({ isActive: true }).sort({ createdAt: -1 }).limit(50);
+
+    const filtered = notifications.filter(n => {
+      const roleMatch = n.targetRole === 'all' || n.targetRole === req.user.role;
+      if (!roleMatch) return false;
+      if (n.targetClass) return studentCourses.includes(n.targetClass);
+      return true;
+    });
+
+    const enriched = filtered.slice(0, 20).map(n => ({
       ...n.toObject(),
       isRead: n.readBy.includes(req.user._id),
     }));

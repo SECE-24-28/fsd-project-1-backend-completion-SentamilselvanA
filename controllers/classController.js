@@ -23,6 +23,9 @@ exports.getAllClasses = async (req, res) => {
 
 exports.getClass = async (req, res) => {
   try {
+    if (!req.params.id.match(/^[a-f\d]{24}$/i))
+      return res.status(400).json({ success: false, message: 'Invalid class ID' });
+
     const danceClass = await Class.findById(req.params.id).populate('instructor', 'name specialization image bio');
     if (!danceClass) return res.status(404).json({ success: false, message: 'Class not found' });
     res.json({ success: true, class: danceClass });
@@ -48,6 +51,9 @@ exports.createClass = async (req, res) => {
 
 exports.updateClass = async (req, res) => {
   try {
+    if (!req.params.id.match(/^[a-f\d]{24}$/i))
+      return res.status(400).json({ success: false, message: 'Invalid class ID' });
+
     const existing = await Class.findById(req.params.id);
     if (!existing) return res.status(404).json({ success: false, message: 'Class not found' });
 
@@ -67,6 +73,9 @@ exports.updateClass = async (req, res) => {
 
 exports.deleteClass = async (req, res) => {
   try {
+    if (!req.params.id.match(/^[a-f\d]{24}$/i))
+      return res.status(400).json({ success: false, message: 'Invalid class ID' });
+
     const danceClass = await Class.findById(req.params.id);
     if (!danceClass) return res.status(404).json({ success: false, message: 'Class not found' });
     if (danceClass.imagePublicId) await cloudinary.uploader.destroy(danceClass.imagePublicId).catch(console.error);
