@@ -12,7 +12,6 @@ exports.createNotification = async (req, res) => {
 
 exports.getNotifications = async (req, res) => {
   try {
-    // Get courses the student is enrolled in (approved applications)
     let studentCourses = [];
     if (req.user.role === 'student') {
       const apps = await Application.find({ user: req.user._id, status: 'Approved' }).select('selectedCourse');
@@ -22,16 +21,23 @@ exports.getNotifications = async (req, res) => {
     const notifications = await Notification.find({ isActive: true }).sort({ createdAt: -1 }).limit(50);
 
     const filtered = notifications.filter(n => {
+      // targetRole must be 'all' or match the user's role
       const roleMatch = n.targetRole === 'all' || n.targetRole === req.user.role;
       if (!roleMatch) return false;
-      if (n.targetClass) return studentCourses.includes(n.targetClass);
+      // if a specific class is targeted, only show to students enrolled in that class
+      if (n.targetClass) {
+        if (req.user.role !== 'student') return false;
+        return studentCourses.includes(n.targetClass);
+      }
       return true;
     });
 
+    const userIdStr = req.user._id.toString();
     const enriched = filtered.slice(0, 20).map(n => ({
       ...n.toObject(),
-      isRead: n.readBy.includes(req.user._id),
+      isRead: n.readBy.some(id => id.toString() === userIdStr),
     }));
+
     res.json({ success: true, notifications: enriched });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
