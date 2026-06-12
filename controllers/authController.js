@@ -110,7 +110,12 @@ exports.forgotPassword = async (req, res) => {
       user.resetPasswordExpire = undefined;
       await user.save({ validateBeforeSave: false });
       console.error('[ForgotPassword] Email failed:', emailErr.message);
-      res.status(500).json({ success: false, message: 'Email could not be sent' });
+      // If SMTP is blocked/unavailable, still return the token in dev mode
+      if (process.env.NODE_ENV === 'development') {
+        console.log(`[ForgotPassword] DEV reset link: ${process.env.CLIENT_URL}/reset-password/${token}`);
+        return res.json({ success: true, message: 'Email unavailable — check server logs for reset link (dev mode)' });
+      }
+      res.status(500).json({ success: false, message: 'Email could not be sent. Please contact support.' });
     }
   } catch (err) {
     console.error('[ForgotPassword] Error:', err.message);

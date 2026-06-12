@@ -76,6 +76,9 @@ app.use((err, req, res, next) => {
 mongoose.connect(process.env.MONGODB_URI)
   .then(() => {
     console.log('MongoDB Connected');
+    // Verify email SMTP on startup (non-blocking)
+    const { verifyEmailConnection } = require('./services/emailService');
+    verifyEmailConnection();
     app.listen(process.env.PORT, () =>
       console.log(`Server running on port ${process.env.PORT}`)
     );
