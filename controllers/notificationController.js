@@ -1,5 +1,6 @@
 const Notification = require('../models/Notification');
 const Application = require('../models/Application');
+const Class = require('../models/Class');
 
 exports.createNotification = async (req, res) => {
   try {
@@ -12,28 +13,38 @@ exports.createNotification = async (req, res) => {
 
 exports.getNotifications = async (req, res) => {
   try {
+    const userIdStr = req.user._id.toString();
     let studentCourses = [];
+
     if (req.user.role === 'student') {
+      // Get all course names the student has applied for (any status)
       const apps = await Application.find({ user: req.user._id }).select('selectedCourse');
-      studentCourses = apps.map(a => a.selectedCourse);
+      studentCourses = apps.map(a => a.selectedCourse.toLowerCase().trim());
     }
 
-    const notifications = await Notification.find({ isActive: true }).sort({ createdAt: -1 }).limit(50);
+    // Fetch all active notifications without limit first, then filter
+    const allNotifications = await Notification.find({ isActive: true }).sort({ createdAt: -1 });
 
-    const filtered = notifications.filter(n => {
-      // targetRole must be 'all' or match the user's role
+    const filtered = allNotifications.filter(n => {
+      // Step 1: role must match
       const roleMatch = n.targetRole === 'all' || n.targetRole === req.user.role;
       if (!roleMatch) return false;
-      // if a specific class is targeted, only show to students enrolled in that class
-      if (n.targetClass) {
+
+      // Step 2: if a class is targeted
+      if (n.targetClass && n.targetClass.trim() !== '') {
+        // non-students never see class-targeted notifications
         if (req.user.role !== 'student') return false;
-        return studentCourses.includes(n.targetClass);
+        // match case-insensitively against student's applied courses
+        return studentCourses.some(course =>
+          course.includes(n.targetClass.toLowerCase().trim()) ||
+          n.targetClass.toLowerCase().trim().includes(course)
+        );
       }
+
       return true;
     });
 
-    const userIdStr = req.user._id.toString();
-    const enriched = filtered.slice(0, 20).map(n => ({
+    const enriched = filtered.slice(0, 50).map(n => ({
       ...n.toObject(),
       isRead: n.readBy.some(id => id.toString() === userIdStr),
     }));

@@ -3,13 +3,20 @@ const { cloudinary, isCloudinaryConfigured } = require('../config/cloudinary');
 
 const getFileUrl = async (file) => {
   if (!file) return null;
-  if (file.path) return { url: file.path, publicId: file.filename }; // Cloudinary
-  if (isCloudinaryConfigured()) {
-    const result = await cloudinary.uploader.upload(
-      `data:${file.mimetype};base64,${file.buffer.toString('base64')}`,
-      { folder: 'dance-school', transformation: [{ width: 800, height: 800, crop: 'limit' }] }
-    );
-    return { url: result.secure_url, publicId: result.public_id };
+  // Cloudinary storage — file already uploaded, path and filename are set
+  if (file.path) return { url: file.path, publicId: file.filename };
+  // Memory storage fallback
+  if (file.buffer) {
+    if (isCloudinaryConfigured()) {
+      const result = await cloudinary.uploader.upload(
+        `data:${file.mimetype};base64,${file.buffer.toString('base64')}`,
+        { folder: 'dance-school', transformation: [{ width: 800, height: 800, crop: 'limit' }] }
+      );
+      return { url: result.secure_url, publicId: result.public_id };
+    }
+    // No Cloudinary — store as base64 data URL directly in DB
+    const base64 = `data:${file.mimetype};base64,${file.buffer.toString('base64')}`;
+    return { url: base64, publicId: '' };
   }
   return null;
 };

@@ -6,7 +6,8 @@ const isCloudinaryConfigured = () =>
   process.env.CLOUDINARY_CLOUD_NAME &&
   process.env.CLOUDINARY_API_KEY &&
   process.env.CLOUDINARY_API_SECRET &&
-  !process.env.CLOUDINARY_CLOUD_NAME.includes('your_');
+  !process.env.CLOUDINARY_CLOUD_NAME.includes('your_') &&
+  !process.env.CLOUDINARY_API_KEY.includes('your_');
 
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
@@ -34,10 +35,10 @@ if (isCloudinaryConfigured()) {
     },
   });
 } else {
-  console.warn('[Cloudinary] Not configured — using local memory storage. Images will not be persisted.');
+  console.warn('[Cloudinary] Not configured — using memory storage with base64 fallback.');
   upload = multer({
     storage: multer.memoryStorage(),
-    limits: { fileSize: 5 * 1024 * 1024 },
+    limits: { fileSize: 10 * 1024 * 1024 },
     fileFilter: (req, file, cb) => {
       if (file.mimetype.startsWith('image/')) cb(null, true);
       else cb(new Error('Only image files are allowed'), false);
